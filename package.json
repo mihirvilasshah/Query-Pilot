@@ -1,0 +1,31 @@
+{
+  "name": "querypilot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "QueryPilot - AI-powered Database & SQL Intelligence Platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @querypilot/web",
+    "build": "npm run build -w @querypilot/web",
+    "start": "npm run start -w @querypilot/web",
+    "lint": "npm run lint -w @querypilot/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:e2e": "npm run test:e2e -w @querypilot/web",
+    "worker:build": "dotnet build services/schema-processor/QueryPilot.SchemaProcessor.slnx",
+    "worker:test": "dotnet test services/schema-processor/QueryPilot.SchemaProcessor.slnx",
+    "worker:run": "dotnet run --project services/schema-processor/src/QueryPilot.SchemaProcessor.Worker"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "dompurify": "^3.4.17"
+  }
+}

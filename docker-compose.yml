@@ -1,0 +1,32 @@
+# Local development for the schema-processing worker.
+#   1. cp .env.example .env   and fill the WORKER block
+#   2. docker compose up --build schema-processor
+# The Next.js app is run with `npm run dev` (or deployed to Vercel); it does not need Docker.
+services:
+  schema-processor:
+    build:
+      context: ./services/schema-processor
+    image: querypilot/schema-processor:local
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      HEALTH_PORT: "8080"
+      WORKER_ID: "docker-local"
+    ports:
+      - "8080:8080" # /healthz
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # reach a local `supabase start` database
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET /healthz HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q \"200\" <&3'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    # Defence in depth: the worker only parses files; it needs no privileges and a read-only root filesystem.
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true

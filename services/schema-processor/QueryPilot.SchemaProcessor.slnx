@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/QueryPilot.SchemaProcessor.Core/QueryPilot.SchemaProcessor.Core.csproj" />
+    <Project Path="src/QueryPilot.SchemaProcessor.Worker/QueryPilot.SchemaProcessor.Worker.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/QueryPilot.SchemaProcessor.Tests/QueryPilot.SchemaProcessor.Tests.csproj" />
+  </Folder>
+</Solution>

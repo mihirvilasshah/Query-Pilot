@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.14" />
+    <PackageReference Include="Microsoft.SqlServer.DacFx" Version="170.5.96" />
+    <PackageReference Include="Npgsql" Version="10.0.3" />
+    <!-- Pinned above the version DacFx brings transitively (known advisories). -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="QueryPilot.SchemaProcessor.Tests" />
+  </ItemGroup>
+
+</Project>

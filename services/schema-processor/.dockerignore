@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/.vs/
+**/*.user
+**/TestResults/
+tests/
+Dockerfile
+.dockerignore
+*.json.out
+hospital.json
