@@ -38,7 +38,8 @@ See the table in `.env.example` (WORKER block). Required: `DATABASE_URL`, `SUPAB
      --env-vars DATABASE_URL=secretref:dburl SUPABASE_SERVICE_ROLE_KEY=secretref:srk \
                 SUPABASE_URL=https://<ref>.supabase.co HEALTH_PORT=8080
   ```
-* **Fly.io / Railway / Render background worker** - any container host works; give it outbound access to Supabase only.
+* **Render (free, hobby use)** - [render.yaml](../render.yaml) deploys the worker as a free Docker web service (Dashboard -> New -> Blueprint). Fill in `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `DATABASE_URL` (use the Supabase *session pooler* URL; the direct host is IPv6-only). Free services sleep after 15 minutes without HTTP traffic, so ping `/healthz` every 5 minutes with an uptime monitor.
+* **Fly.io / Railway background worker** - any container host works; give it outbound access to Supabase only.
 * **A small VM** with `docker compose` for the cheapest setup.
 
 Use the Supabase *connection pooler in session mode* or the direct connection string; the worker uses `COPY`, so transaction-mode poolers are not suitable.
