@@ -34,7 +34,7 @@ tests/QueryPilot.SchemaProcessor.Tests  xUnit, synthetic fixtures only (DACPACs 
 | `MAX_FILE_BYTES` | `52428800` | Maximum upload size (50 MB) for both file types. |
 | `MAX_UNCOMPRESSED_BYTES` | `524288000` | DACPAC: maximum total uncompressed size (500 MB). |
 | `MAX_ZIP_ENTRIES` | `2000` | DACPAC: maximum number of ZIP entries. |
-| `HEALTH_PORT` | – | If set, serves `GET /healthz` (200 while the poll loop is alive). Nothing is exposed otherwise. |
+| `HEALTH_PORT` | – | If set, serves `GET /healthz` (200 while polling or while a job is being processed). Nothing is exposed otherwise. |
 
 Per-entry size (300 MB) and compression ratio (200:1) limits live in `ExtractionLimits`.
 

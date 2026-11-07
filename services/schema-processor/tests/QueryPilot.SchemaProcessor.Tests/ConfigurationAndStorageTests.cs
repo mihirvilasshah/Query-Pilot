@@ -62,6 +62,26 @@ public class ConfigurationAndStorageTests : IDisposable
     }
 
     [Fact]
+    public void Heartbeat_stays_alive_while_processing_even_if_the_poll_clock_is_stale()
+    {
+        var heartbeat = new WorkerHeartbeat();
+        Assert.True(heartbeat.IsAlive(TimeSpan.FromMinutes(1)));
+
+        heartbeat.SetLastPollUtcForTests(DateTime.UtcNow.AddMinutes(-10));
+
+        Assert.False(heartbeat.IsAlive(TimeSpan.FromMinutes(1)));
+
+        using (heartbeat.Processing())
+        {
+            Assert.True(heartbeat.IsBusy);
+            Assert.True(heartbeat.IsAlive(TimeSpan.FromSeconds(1)));
+        }
+
+        Assert.False(heartbeat.IsBusy);
+        Assert.True(heartbeat.IsAlive(TimeSpan.FromMinutes(1)));
+    }
+
+    [Fact]
     public void Options_defaults_match_the_documented_values()
     {
         var o = new WorkerOptions();

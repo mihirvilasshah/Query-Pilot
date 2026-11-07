@@ -7,10 +7,44 @@ namespace QueryPilot.SchemaProcessor.Services;
 public sealed class WorkerHeartbeat
 {
     private long _lastTicks = DateTime.UtcNow.Ticks;
+    private int _busy;
 
     public DateTime LastPollUtc => new(Interlocked.Read(ref _lastTicks), DateTimeKind.Utc);
 
+    public bool IsBusy => Volatile.Read(ref _busy) != 0;
+
     public void Beat() => Interlocked.Exchange(ref _lastTicks, DateTime.UtcNow.Ticks);
+
+    internal void SetLastPollUtcForTests(DateTime utc) =>
+        Interlocked.Exchange(ref _lastTicks, utc.Ticks);
+
+    public bool IsAlive(TimeSpan maxSilence) =>
+        IsBusy || DateTime.UtcNow - LastPollUtc < maxSilence;
+
+    /// <summary>Marks the worker busy (e.g. while extracting a DACPAC) so health checks stay green.</summary>
+    public IDisposable Processing()
+    {
+        Interlocked.Increment(ref _busy);
+        Beat();
+        return new BusyScope(this);
+    }
+
+    private sealed class BusyScope(WorkerHeartbeat owner) : IDisposable
+    {
+        private WorkerHeartbeat? _owner = owner;
+
+        public void Dispose()
+        {
+            var heartbeat = Interlocked.Exchange(ref _owner, null);
+            if (heartbeat is null)
+            {
+                return;
+            }
+
+            Interlocked.Decrement(ref heartbeat._busy);
+            heartbeat.Beat();
+        }
+    }
 }
 
 /// <summary>Claims and processes jobs one at a time until cancelled.</summary>
@@ -40,7 +74,10 @@ public sealed class JobPollingLoop(
                     continue;
                 }
 
-                await processor.ProcessAsync(job, ct);
+                using (heartbeat.Processing())
+                {
+                    await processor.ProcessAsync(job, ct);
+                }
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {

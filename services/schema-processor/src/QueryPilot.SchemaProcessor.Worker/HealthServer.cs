@@ -27,7 +27,9 @@ public sealed class HealthServer(WorkerOptions options, WorkerHeartbeat heartbea
 
         logger.LogInformation("Health endpoint listening on port {Port}", port);
         await using var registration = stoppingToken.Register(listener.Stop);
-        var maxSilence = TimeSpan.FromSeconds(Math.Max(60, options.PollIntervalSeconds * 20));
+        // Align with job-lock staleness: DACPAC extraction routinely exceeds 60s, and
+        // platforms such as Render restart the instance if /healthz returns 503.
+        var maxSilence = TimeSpan.FromSeconds(Math.Max(options.StaleJobSeconds, options.PollIntervalSeconds * 20));
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -41,12 +43,35 @@ public sealed class HealthServer(WorkerOptions options, WorkerHeartbeat heartbea
                 break;
             }
 
-            var healthy = context.Request.Url?.AbsolutePath == "/healthz" &&
-                          DateTime.UtcNow - heartbeat.LastPollUtc < maxSilence;
-            context.Response.StatusCode = context.Request.Url?.AbsolutePath != "/healthz"
-                ? (int)HttpStatusCode.NotFound
-                : healthy ? (int)HttpStatusCode.OK : (int)HttpStatusCode.ServiceUnavailable;
-            context.Response.Close();
+            var path = context.Request.Url?.AbsolutePath;
+            if (path != "/healthz")
+            {
+                context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                context.Response.Close();
+                continue;
+            }
+
+            var healthy = heartbeat.IsAlive(maxSilence);
+            context.Response.StatusCode = healthy ? (int)HttpStatusCode.OK : (int)HttpStatusCode.ServiceUnavailable;
+            context.Response.ContentType = "text/plain";
+            var body = healthy ? "ok"u8.ToArray() : "unhealthy"u8.ToArray();
+            context.Response.ContentLength64 = body.Length;
+            try
+            {
+                await context.Response.OutputStream.WriteAsync(body, stoppingToken);
+            }
+            catch (Exception) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception)
+            {
+                // Client disconnected; keep serving health checks.
+            }
+            finally
+            {
+                try { context.Response.Close(); } catch { /* already closed */ }
+            }
         }
     }
 }

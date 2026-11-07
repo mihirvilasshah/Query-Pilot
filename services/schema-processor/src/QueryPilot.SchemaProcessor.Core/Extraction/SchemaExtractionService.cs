@@ -23,7 +23,8 @@ public interface ISchemaExtractionService
 /// </summary>
 public sealed class SchemaExtractionService(ExtractionLimits limits) : ISchemaExtractionService
 {
-    private const int StackBytes = 256 * 1024 * 1024;
+    // Large enough for hostile/deep ScriptDom recursion; small enough for 512 MiB hosts (Render free).
+    private const int StackBytes = 16 * 1024 * 1024;
 
     public ExtractionLimits Limits { get; } = limits;
 
