@@ -20,22 +20,24 @@ export function VersionsTable({ versions, jobs, projectId }: { versions: Version
         const c = v.summary.counts;
         return (
           <li key={v.id} className="space-y-3 px-4 py-3">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <div className="flex min-w-0 flex-1 items-center gap-3">
-                <Badge variant="secondary" className="shrink-0">v{v.version_number}</Badge>
+            <div className="flex min-w-0 items-start gap-2.5">
+              <Badge variant="secondary" className="mt-0.5 shrink-0">v{v.version_number}</Badge>
+              <div className="min-w-0 flex-1 space-y-2">
                 <div className="min-w-0">
                   <VersionLabelEditor versionId={v.id} versionNumber={v.version_number} label={v.label} />
                   <p className="truncate text-xs text-muted-foreground">{v.source_type.toUpperCase()} · {v.source_file_name} · {formatDate(v.created_at, true)}</p>
                 </div>
-              </div>
-              {c && ready && <p className="text-xs text-muted-foreground">{c.tables} tables · {c.views} views · {c.procedures} procs · {c.functions} funcs · {c.dependencies} deps</p>}
-              <Badge variant={STATUS_VARIANT[v.status]}>{STATUS_LABEL[v.status]}</Badge>
-              {ready && (
-                <div className="flex gap-1.5">
-                  <Button asChild variant="outline" size="sm"><Link href={`/database-intelligence?v=${v.id}`}>Open</Link></Button>
-                  <Button asChild variant="ghost" size="icon-sm" aria-label="Download documentation"><a href={`/api/docs/${v.id}`}><Download className="size-4" /></a></Button>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                  {c && ready && <p className="text-xs text-muted-foreground">{c.tables} tables · {c.views} views · {c.procedures} procs · {c.functions} funcs · {c.dependencies} deps</p>}
+                  <Badge variant={STATUS_VARIANT[v.status]}>{STATUS_LABEL[v.status]}</Badge>
+                  {ready && (
+                    <div className="ml-auto flex gap-1.5">
+                      <Button asChild variant="outline" size="sm"><Link href={`/database-intelligence?v=${v.id}`}>Open</Link></Button>
+                      <Button asChild variant="ghost" size="icon-sm" aria-label="Download documentation"><a href={`/api/docs/${v.id}`}><Download className="size-4" /></a></Button>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
             {job && (v.status === "failed" || v.status === "pending" || job.warnings.length > 0) && (
               <ImportJobStatusCard compact initial={toJobView(job)} />

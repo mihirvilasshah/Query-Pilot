@@ -22,8 +22,8 @@ export function VersionLabelEditor({ versionId, versionNumber, label }: { versio
   const display = versionDisplayLabel(versionNumber, label);
 
   return (
-    <div className="flex min-w-0 items-center gap-1">
-      <p className="truncate text-sm font-medium">{display}</p>
+    <div className="flex min-w-0 items-center gap-1.5">
+      <p className="min-w-0 flex-1 truncate text-sm font-medium" title={display}>{display}</p>
       <Dialog
         open={open}
         onOpenChange={(next) => {
@@ -32,7 +32,7 @@ export function VersionLabelEditor({ versionId, versionNumber, label }: { versio
         }}
       >
         <DialogTrigger asChild>
-          <Button variant="ghost" size="icon-xs" aria-label={`Edit label for version ${versionNumber}`} data-testid={`edit-version-label-${versionNumber}`}>
+          <Button variant="ghost" size="icon-xs" className="shrink-0" aria-label={`Edit label for version ${versionNumber}`} data-testid={`edit-version-label-${versionNumber}`}>
             <Pencil />
           </Button>
         </DialogTrigger>
