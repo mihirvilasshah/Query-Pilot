@@ -1,11 +1,11 @@
 "use client";
 
-import { Bot, Check, ChevronDown, Copy, Info, Loader2, Plus, Send, Sparkles, User } from "lucide-react";
+import { Bot, ChevronDown, Info, Loader2, Plus, Send, Sparkles, User } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import type { DatabaseAnswer } from "@querypilot/ai-core";
 import { AiErrorNotice, ExternalAiNotice } from "@/components/ai/ai-notices";
+import { CopyButton } from "@/components/common/copy-button";
 import { Markdown } from "@/components/common/markdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,22 +66,6 @@ function answerToText(a: DatabaseAnswer): string {
   addList("Recommendations", a.recommendations);
   addList("Assumptions & uncertain interpretations", a.assumptions);
   return sections.join("\n\n");
-}
-
-function CopyButton({ label, text, testId, className }: { label: string; text: string; testId?: string; className?: string }) {
-  const [copied, setCopied] = useState(false);
-  const copy = () => {
-    void navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    }).catch(() => toast.error("Could not copy to the clipboard"));
-  };
-  return (
-    <button type="button" onClick={copy} aria-label={label} data-testid={testId} className={cn("flex items-center gap-1 hover:text-foreground", className)}>
-      {copied ? <Check className="size-3.5 text-success" /> : <Copy className="size-3.5" />}
-      {copied ? "Copied" : label}
-    </button>
-  );
 }
 
 function AssistantMessage({ m, question }: { m: ChatMessage; question?: string }) {

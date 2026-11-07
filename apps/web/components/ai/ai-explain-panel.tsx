@@ -5,7 +5,30 @@ import { useState } from "react";
 import type { ObjectExplanation } from "@querypilot/ai-core";
 import { Button } from "@/components/ui/button";
 import { AiErrorNotice, ExternalAiNotice } from "@/components/ai/ai-notices";
+import { CopyButton } from "@/components/common/copy-button";
 import { postJson, type ApiFailure } from "@/lib/ai/client";
+
+/** Plain-text rendering of an object explanation, used by the copy actions. */
+function explanationToText(e: ObjectExplanation): string {
+  const sections: string[] = [`Summary:\n${e.summary}`];
+  if (e.purpose) sections.push(`Purpose:\n${e.purpose}`);
+  if (e.parameters.length) sections.push(`Parameters:\n${e.parameters.map((p) => `- ${p.name} - ${p.explanation}`).join("\n")}`);
+  const addList = (title: string, items: string[]) => {
+    if (items.length) sections.push(`${title}:\n${items.map((i) => `- ${i}`).join("\n")}`);
+  };
+  addList("Execution flow", e.executionFlow);
+  addList("Tables read", e.tablesRead);
+  addList("Tables modified", e.tablesModified);
+  addList("Joins", e.joins);
+  addList("Filters", e.filters);
+  addList("Conditions", e.conditions);
+  addList("Temporary tables", e.temporaryTables);
+  if (e.transactions) sections.push(`Transactions:\n${e.transactions}`);
+  addList("Nested calls", e.nestedCalls);
+  addList("Potential risks", e.risks);
+  addList("Assumptions / uncertain interpretations", e.assumptions);
+  return sections.join("\n\n");
+}
 
 function List({ title, items }: { title: string; items: string[] }) {
   if (!items.length) return null;
@@ -19,13 +42,13 @@ function List({ title, items }: { title: string; items: string[] }) {
 
 export function AiExplainPanel({ objectId, noun }: { objectId: string; noun: string }) {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ explanation: ObjectExplanation; model: string; provider: string } | null>(null);
+  const [result, setResult] = useState<{ explanation: ObjectExplanation; model: string; provider: string; prompt?: string } | null>(null);
   const [error, setError] = useState<ApiFailure | null>(null);
 
   const run = async () => {
     setLoading(true);
     setError(null);
-    const res = await postJson<{ explanation: ObjectExplanation; model: string; provider: string }>("/api/ai/explain-object", { objectId });
+    const res = await postJson<{ explanation: ObjectExplanation; model: string; provider: string; prompt?: string }>("/api/ai/explain-object", { objectId });
     setLoading(false);
     if (res.ok) setResult(res.data);
     else setError(res.error);
@@ -69,6 +92,11 @@ export function AiExplainPanel({ objectId, noun }: { objectId: string; noun: str
           <List title="Nested calls" items={result.explanation.nestedCalls} />
           <List title="Potential risks" items={result.explanation.risks} />
           <List title="Assumptions / uncertain interpretations" items={result.explanation.assumptions} />
+          <div className="flex flex-wrap items-center justify-end gap-3 border-t pt-2 text-xs text-muted-foreground">
+            {result.prompt && <CopyButton label="Copy prompt" text={result.prompt} testId="copy-explain-prompt" />}
+            <CopyButton label="Copy explanation" text={explanationToText(result.explanation)} testId="copy-explain-answer" />
+            {result.prompt && <CopyButton label="Copy prompt & answer" text={`Prompt:\n${result.prompt}\n\nAnswer:\n${explanationToText(result.explanation)}`} testId="copy-explain-prompt-answer" />}
+          </div>
         </div>
       )}
     </div>

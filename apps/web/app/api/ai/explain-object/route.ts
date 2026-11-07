@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     const context = await buildSchemaContext(ctx, obj.version_id, fullName, [obj.id], 14000);
     if (!context) return apiError(409, "version_not_ready", "This schema version is not available.");
     const result = await trackedAi(ctx, ai, "explain_object", () => ai.provider.explainDatabaseObject({ objectType: obj.object_type, fullName, definition: null, contextText: context.contextText }));
-    return NextResponse.json({ explanation: result.data, model: result.model, provider: result.provider, contextObjects: context.objects.map((o) => o.fullName) });
+    return NextResponse.json({ explanation: result.data, model: result.model, provider: result.provider, prompt: result.promptText, contextObjects: context.objects.map((o) => o.fullName) });
   } catch (e) {
     return aiErrorResponse(e);
   }

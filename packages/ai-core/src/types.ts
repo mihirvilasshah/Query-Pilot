@@ -43,6 +43,8 @@ export interface AiStructuredResult<T> {
   provider: AiProviderId;
   usage: AiUsage;
   latencyMs: number;
+  /** The prompt (system + messages) sent for the first attempt. Returned only by routes that expose it. */
+  promptText: string;
 }
 
 export interface ModelInfo {

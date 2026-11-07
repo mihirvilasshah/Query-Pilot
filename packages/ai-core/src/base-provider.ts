@@ -66,9 +66,13 @@ export abstract class BaseAiProvider implements AiProvider {
     if (last && last.role === "user" && !last.content.includes("Return ONLY a single JSON object")) {
       messages[messages.length - 1] = { ...last, content: `${last.content}\n\nJSON shape: ${schemaDescription}${JSON_ONLY_SUFFIX}` };
     }
+    const promptText = [
+      ...(rest.system ? [`System:\n${rest.system}`] : []),
+      ...messages.map((m) => `${m.role === "user" ? "User" : m.role === "assistant" ? "Assistant" : "System"}:\n${m.content}`),
+    ].join("\n\n");
     const first = await this.complete({ ...rest, messages, json: true, temperature: rest.temperature ?? 0.1 });
     const parsed = this.tryParse(first.text, schema);
-    if (parsed.ok) return { data: parsed.data, rawText: first.text, model: first.model, provider: first.provider, usage: first.usage, latencyMs: first.latencyMs };
+    if (parsed.ok) return { data: parsed.data, rawText: first.text, model: first.model, provider: first.provider, usage: first.usage, latencyMs: first.latencyMs, promptText };
 
     // one repair attempt
     const repair = await this.complete({
@@ -90,6 +94,7 @@ export abstract class BaseAiProvider implements AiProvider {
       provider: repair.provider,
       usage: { inputTokens: (first.usage.inputTokens ?? 0) + (repair.usage.inputTokens ?? 0), outputTokens: (first.usage.outputTokens ?? 0) + (repair.usage.outputTokens ?? 0) },
       latencyMs: first.latencyMs + repair.latencyMs,
+      promptText,
     };
   }
 
