@@ -1,8 +1,9 @@
 "use client";
 
-import { Bot, ChevronDown, Info, Loader2, Plus, Send, Sparkles, User } from "lucide-react";
+import { Bot, Check, ChevronDown, Copy, Info, Loader2, Plus, Send, Sparkles, User } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { DatabaseAnswer } from "@querypilot/ai-core";
 import { AiErrorNotice, ExternalAiNotice } from "@/components/ai/ai-notices";
 import { Markdown } from "@/components/common/markdown";
@@ -50,10 +51,47 @@ function List({ title, items }: { title: string; items: string[] }) {
   );
 }
 
-function AssistantMessage({ m }: { m: ChatMessage }) {
+/** Plain-text rendering of a structured answer, used by "Copy prompt & answer". */
+function answerToText(a: DatabaseAnswer): string {
+  const sections: string[] = [`Summary:\n${a.summary}`];
+  const addList = (title: string, items: string[]) => {
+    if (items.length) sections.push(`${title}:\n${items.map((i) => `- ${i}`).join("\n")}`);
+  };
+  if (a.explanation) sections.push(`Detailed explanation:\n${a.explanation}`);
+  addList("Relevant database objects", a.relevantObjects.map((o) => `${o.name}${o.type ? ` (${o.type})` : ""}${o.reason ? ` — ${o.reason}` : ""}`));
+  addList("Tables referenced", a.tablesReferenced);
+  addList("Columns referenced", a.columnsReferenced);
+  addList("Dependencies", a.dependencies);
+  addList("Potential risks", a.risks);
+  addList("Recommendations", a.recommendations);
+  addList("Assumptions & uncertain interpretations", a.assumptions);
+  return sections.join("\n\n");
+}
+
+function CopyButton({ label, text, testId, className }: { label: string; text: string; testId?: string; className?: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }).catch(() => toast.error("Could not copy to the clipboard"));
+  };
+  return (
+    <button type="button" onClick={copy} aria-label={label} data-testid={testId} className={cn("flex items-center gap-1 hover:text-foreground", className)}>
+      {copied ? <Check className="size-3.5 text-success" /> : <Copy className="size-3.5" />}
+      {copied ? "Copied" : label}
+    </button>
+  );
+}
+
+function AssistantMessage({ m, question }: { m: ChatMessage; question?: string }) {
   const a = m.answer;
   const [showCtx, setShowCtx] = useState(false);
   if (!a) return <Markdown>{m.content}</Markdown>;
+
+  const answer = answerToText(a);
+  const promptAndAnswer = `${question ? `Prompt:\n${question}\n\n` : ""}Answer:\n${answer}`;
+
   return (
     <div className="space-y-4" data-testid="assistant-answer">
       <div><h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Summary</h4><p className="text-sm">{a.summary}</p></div>
@@ -82,7 +120,13 @@ function AssistantMessage({ m }: { m: ChatMessage }) {
         <p className="flex gap-1.5 rounded-md border border-warning/40 bg-warning/10 p-2 text-xs"><Info className="mt-0.5 size-3.5 shrink-0" />The model mentioned names that do not exist in the retrieved metadata and they were removed from the lists above: {m.unverified.join(", ")}.</p>
       )}
       <div className="border-t pt-2 text-xs text-muted-foreground">
-        <button type="button" className="flex items-center gap-1 hover:text-foreground" onClick={() => setShowCtx((s) => !s)}>AI-generated · {m.provider} / {m.model} · context details <ChevronDown className={cn("size-3 transition-transform", showCtx && "rotate-180")} /></button>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <button type="button" className="flex items-center gap-1 hover:text-foreground" onClick={() => setShowCtx((s) => !s)}>AI-generated · {m.provider} / {m.model} · context details <ChevronDown className={cn("size-3 transition-transform", showCtx && "rotate-180")} /></button>
+          <div className="flex items-center gap-3">
+            <CopyButton label="Copy answer" text={answer} testId="copy-answer" />
+            <CopyButton label="Copy prompt & answer" text={promptAndAnswer} testId="copy-prompt-answer" />
+          </div>
+        </div>
         {showCtx && (
           <div className="mt-2 space-y-1">
             <p>Only these objects were retrieved from the metadata store and sent to the model{m.truncated ? " (context was truncated to stay within limits)" : ""}:</p>
@@ -142,15 +186,24 @@ export function DbChat({ projectId, versionId, versionLabel, initialConversation
             <div className="mt-5 flex flex-wrap justify-center gap-2">{SUGGESTIONS.map((s) => <button key={s} type="button" className="rounded-full border px-3 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground" onClick={() => void ask(s)}>{s}</button>)}</div>
           </div>
         )}
-        {messages.map((m) => (
-          <div key={m.id} className={cn("flex gap-3", m.role === "user" && "justify-end")}>
-            {m.role === "assistant" && <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground"><Bot className="size-4" /></span>}
-            <div className={cn("max-w-[92%] rounded-xl px-4 py-3 text-sm", m.role === "user" ? "bg-primary text-primary-foreground" : "surface w-full")}>
-              {m.role === "user" ? <p className="whitespace-pre-wrap">{m.content}</p> : <AssistantMessage m={m} />}
+        {messages.map((m, i) => {
+          // The prompt for an answer is the nearest preceding user message.
+          const question = m.role === "assistant" ? messages.slice(0, i).reverse().find((x) => x.role === "user")?.content : undefined;
+          return (
+            <div key={m.id} className={cn("flex gap-3", m.role === "user" && "justify-end")}>
+              {m.role === "assistant" && <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground"><Bot className="size-4" /></span>}
+              {m.role === "user" ? (
+                <div className="flex max-w-[92%] flex-col items-end gap-1">
+                  <div className="rounded-xl bg-primary px-4 py-3 text-sm text-primary-foreground"><p className="whitespace-pre-wrap">{m.content}</p></div>
+                  <CopyButton label="Copy prompt" text={m.content} testId="copy-prompt" className="text-xs text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="surface w-full max-w-[92%] rounded-xl px-4 py-3 text-sm"><AssistantMessage m={m} question={question} /></div>
+              )}
+              {m.role === "user" && <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary"><User className="size-4" /></span>}
             </div>
-            {m.role === "user" && <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary"><User className="size-4" /></span>}
-          </div>
-        ))}
+          );
+        })}
         {loading && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Retrieving metadata and thinking…</div>}
         {error && <AiErrorNotice error={error} />}
         <div ref={endRef} />
