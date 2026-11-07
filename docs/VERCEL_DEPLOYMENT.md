@@ -4,7 +4,7 @@ The Next.js app (`apps/web`) is stateless: no local file persistence, no long-ru
 
 ## 1. Supabase
 
-1. Create a project; run the two SQL migrations (see [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md)).
+1. Create a project; apply all files in `supabase/migrations/` in filename order (see [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md#3-create-the-database)).
 2. *Authentication → URL configuration*: set **Site URL** to your production URL and add `https://YOUR-APP.vercel.app/auth/callback` (and preview URLs) to **Redirect URLs**.
 3. *Storage*: the migration creates the private `schema-uploads` bucket (50 MB limit - the free-tier maximum; raise it on paid plans and in `MAX_UPLOAD_BYTES`).
 4. Confirm RLS is enabled on all tables (*Table Editor* shows the shield) - the migration does this.

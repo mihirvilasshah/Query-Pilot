@@ -5,7 +5,7 @@
 * Node.js ≥ 20.9 (22 recommended) and npm ≥ 10.9 (`npm i -g npm@latest` if you hit `edgesOut` errors with older npm)
 * A Supabase project (free tier) **or** Docker Desktop + the Supabase CLI for a local stack
 * For the processing worker: Docker, or the .NET 10 SDK
-* Optional: a Gemini or OpenRouter API key
+* Optional: a Gemini, OpenRouter or Groq API key
 
 ## 2. Install & configure
 
@@ -18,10 +18,36 @@ Fill `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Without the
 
 ## 3. Create the database
 
-Hosted project: open *SQL Editor* and run, in order, `supabase/migrations/20260101000001_core_schema.sql` then `20260101000002_rls_storage_rpc.sql` (or `supabase link && supabase db push`).
+Hosted project (first-time setup): open *SQL Editor* and run every file in `supabase/migrations/` in filename order (`20260101000001_core_schema.sql`, `20260101000002_rls_storage_rpc.sql`, `20260101000003_add_groq_provider.sql`, …), or link the project once and push:
+
+```bash
+supabase link --project-ref <project-ref>
+supabase db push
+```
+
 Local stack: `supabase init` (skip if `supabase/` exists) → `supabase start` → `supabase db reset`.
 
 In *Authentication → Providers → Email* you can disable "Confirm email" for local development. Add `http://localhost:3000/auth/callback` to the redirect URLs.
+
+### Applying later migrations (hosted project)
+
+When new files are added to `supabase/migrations/`, push only the pending ones:
+
+```powershell
+$db = "postgresql://postgres.<project-ref>:<url-encoded-db-password>@aws-1-<region>.pooler.supabase.com:5432/postgres"
+npx supabase db push --db-url $db
+```
+
+Notes:
+
+* Use the **pooler** host from *Settings → Database → Connection pooling* (for example `aws-1-eu-west-3.pooler.supabase.com`). The direct `db.<project-ref>.supabase.co` host is IPv6-only on newer Supabase projects, so it fails from IPv4-only networks.
+* URL-encode special characters in the database password (`@` → `%40`, `#` → `%23`, `:` → `%3A`).
+* Preview first with `supabase db push --dry-run --db-url $db`; it lists exactly which migrations would run.
+* Verify afterwards with `supabase migration list --db-url $db` — each local migration must also appear in the `remote` column.
+* On Windows, if the global `npm`/`npx` shim is broken, invoke npx through npm directly:
+  `node "C:\Program Files\nodejs\node_modules\npm\bin\npx-cli.js" --yes supabase@2.122.0 db push --db-url $db`
+
+Alternatively, paste the migration SQL into *Dashboard → SQL Editor* and run it (useful when the CLI or direct database connection is unavailable).
 
 ## 4. Run
 

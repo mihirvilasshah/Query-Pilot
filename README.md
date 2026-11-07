@@ -34,7 +34,7 @@ Prerequisites: Node.js 20.9+ (22 recommended), a free [Supabase](https://supabas
 ```bash
 npm install
 cp .env.example apps/web/.env.local        # fill the WEB block (Supabase URL + anon key)
-# apply supabase/migrations/*.sql in the Supabase SQL editor (or `supabase db push`)
+# apply supabase/migrations/*.sql (see docs/LOCAL_DEVELOPMENT.md#3-create-the-database)
 npm run dev                                 # http://localhost:3000
 ```
 
