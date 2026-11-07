@@ -30,6 +30,11 @@ public static class PostgresConnectionString
             builder.MaxPoolSize = 10; // a single worker needs very few connections
         }
 
+        // Npgsql 10 probes GSSAPI encryption by default. Slim/runtime Linux images do not
+        // ship libgssapi_krb5.so.2; the probe then logs a fatal-looking error and can
+        // stall the first connection. This worker authenticates with a password over SSL.
+        builder.GssEncryptionMode = GssEncryptionMode.Disable;
+
         return builder.ConnectionString;
     }
 

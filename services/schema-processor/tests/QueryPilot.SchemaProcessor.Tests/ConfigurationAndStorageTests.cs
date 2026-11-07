@@ -26,6 +26,7 @@ public class ConfigurationAndStorageTests : IDisposable
         Assert.Equal("p@ss:w/rd", cs.Password);
         Assert.Equal("postgres", cs.Database);
         Assert.Equal(SslMode.Require, cs.SslMode);
+        Assert.Equal(GssEncryptionMode.Disable, cs.GssEncryptionMode);
     }
 
     [Fact]
@@ -45,6 +46,7 @@ public class ConfigurationAndStorageTests : IDisposable
             "Host=h;Port=5433;Username=u;Password=pw;Database=d"));
 
         Assert.Equal((("h", 5433, "u", "pw", "d")), (cs.Host, cs.Port, cs.Username, cs.Password, cs.Database));
+        Assert.Equal(GssEncryptionMode.Disable, cs.GssEncryptionMode);
     }
 
     [Fact]
