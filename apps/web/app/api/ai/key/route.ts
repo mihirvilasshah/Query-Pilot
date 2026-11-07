@@ -3,8 +3,9 @@ import { z } from "zod";
 import { apiKeySchema } from "@querypilot/shared-validation";
 import { createAiProvider, isAiError, userMessageFor } from "@querypilot/ai-core";
 import { apiError, audit, authenticate, isResponse, parseBody, tooManyRequests, withinRateLimit } from "@/lib/api";
+import { getPreferences, resolveAiConfig } from "@/lib/ai/config";
 import { encryptSecret, isEncryptionConfigured, keyHint } from "@/lib/crypto";
-import { getAppUrl } from "@/lib/env";
+import { getAppUrl, getServerAiEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /** Stores an AES-256-GCM encrypted, per-user provider key. The key is validated first and never echoed back. */
@@ -29,13 +30,29 @@ export async function PUT(request: Request) {
   }
 
   const enc = encryptSecret(body.apiKey);
-  const { error } = await admin.from("user_ai_credentials").upsert(
+  const { data: stored, error } = await admin.from("user_ai_credentials").upsert(
     { owner_id: ctx.user.id, provider: body.provider, ciphertext: enc.ciphertext, iv: enc.iv, auth_tag: enc.authTag, key_version: enc.keyVersion, key_hint: keyHint(body.apiKey), validated_at: new Date().toISOString() },
     { onConflict: "owner_id,provider" },
-  );
-  if (error) return apiError(500, "save_failed", "Could not store the key.");
+  ).select("id").maybeSingle();
+  if (error || !stored) {
+    console.error("[ai] store key failed", error?.message ?? "upsert returned no row");
+    return apiError(500, "save_failed", "Could not store the key.");
+  }
+
+  // Saving a key for a provider also selects that provider, otherwise Settings reloads
+  // the preferred provider's (possibly empty) credential and looks like the save was ignored.
+  const prefs = await getPreferences(ctx);
+  const env = getServerAiEnv();
+  const model = prefs.ai_provider === body.provider && prefs.ai_model ? prefs.ai_model : env[body.provider].model;
+  const { error: prefsError } = await ctx.supabase.from("user_preferences").update({
+    ai_provider: body.provider,
+    ai_model: model,
+  }).eq("user_id", ctx.user.id);
+  if (prefsError) console.error("[ai] could not select provider after saving key", prefsError.message);
+
   await audit(ctx.supabase, ctx.user.id, "ai.key_saved", "user_ai_credential", undefined, { provider: body.provider });
-  return NextResponse.json({ ok: true, keyHint: keyHint(body.apiKey) });
+  const { config } = await resolveAiConfig(ctx);
+  return NextResponse.json({ ok: true, keyHint: keyHint(body.apiKey), config });
 }
 
 export async function DELETE(request: Request) {

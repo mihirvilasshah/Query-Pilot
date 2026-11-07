@@ -72,14 +72,25 @@ export function AiSettingsPanel({ initial, encryptionAvailable, requests }: { in
   const saveKey = async () => {
     setBusy("key");
     const res = await fetch("/api/ai/key", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ provider, apiKey }) });
-    const j = (await res.json()) as { error?: { message: string } };
+    const j = (await res.json()) as { error?: { message: string }; config?: Config };
     setBusy(null);
     if (!res.ok) return void toast.error(j.error?.message ?? "Could not save the key");
     setApiKey("");
+    if (j.config) {
+      setCfg(j.config);
+      setProvider(j.config.provider);
+      setModel(j.config.model);
+    } else {
+      const c = await fetch("/api/ai/settings");
+      if (c.ok) {
+        const next = ((await c.json()) as { config: Config }).config;
+        setCfg(next);
+        setProvider(next.provider);
+        setModel(next.model);
+      }
+    }
     toast.success("API key validated and stored encrypted");
-    const c = await fetch("/api/ai/settings");
-    if (c.ok) setCfg(((await c.json()) as { config: Config }).config);
-    void fetchModels(provider).then(applyModels);
+    void fetchModels(j.config?.provider ?? provider).then(applyModels);
   };
 
   const removeKey = async () => {
@@ -150,7 +161,7 @@ export function AiSettingsPanel({ initial, encryptionAvailable, requests }: { in
         {encryptionAvailable ? (
           <>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={cfg.keyHint ? `Saved key ${cfg.keyHint} - paste a new key to replace` : "Paste API key"} autoComplete="off" aria-label="API key" />
+              <Input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={cfg.keyHint ? `Saved key ${cfg.keyHint} — paste a new key to replace` : "Paste API key"} autoComplete="new-password" name="ai-provider-key" aria-label="API key" />
               <Button variant="outline" onClick={validate} disabled={busy === "validate" || (!apiKey && cfg.keySource === null)}>{busy === "validate" && <Loader2 className="size-4 animate-spin" />} Validate</Button>
               <Button onClick={saveKey} disabled={busy === "key" || apiKey.length < 8}>{busy === "key" && <Loader2 className="size-4 animate-spin" />} Save key</Button>
               {cfg.keySource === "user" && <Button variant="ghost" size="icon" onClick={removeKey} aria-label="Remove stored key" disabled={busy === "remove"}><Trash2 className="size-4" /></Button>}

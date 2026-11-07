@@ -32,12 +32,24 @@ async function loadUserKey(userId: string, provider: AiProviderId): Promise<{ ke
   if (!isEncryptionConfigured()) return { key: null, hint: null };
   const admin = createAdminClient();
   if (!admin) return { key: null, hint: null };
-  const { data } = await admin.from("user_ai_credentials").select("ciphertext,iv,auth_tag,key_hint").eq("owner_id", userId).eq("provider", provider).maybeSingle();
-  if (!data) return { key: null, hint: null };
-  try {
-    return { key: decryptSecret({ ciphertext: data.ciphertext, iv: data.iv, authTag: data.auth_tag }), hint: data.key_hint };
-  } catch {
+  const { data, error } = await admin
+    .from("user_ai_credentials")
+    .select("ciphertext,iv,auth_tag,key_hint")
+    .eq("owner_id", userId)
+    .eq("provider", provider)
+    .order("updated_at", { ascending: false })
+    .limit(1);
+  if (error) {
+    console.error("[ai] load user key failed", error.message);
     return { key: null, hint: null };
+  }
+  const row = data?.[0];
+  if (!row) return { key: null, hint: null };
+  try {
+    return { key: decryptSecret({ ciphertext: row.ciphertext, iv: row.iv, authTag: row.auth_tag }), hint: row.key_hint };
+  } catch (e) {
+    console.error("[ai] decrypt user key failed", e instanceof Error ? e.message : e);
+    return { key: null, hint: row.key_hint };
   }
 }
 
@@ -48,7 +60,7 @@ export async function resolveAiConfig(ctx: AuthedContext): Promise<{ config: Res
   const model = prefs.ai_model ?? env[provider].model;
   const user = await loadUserKey(ctx.user.id, provider);
   const apiKey = user.key ?? env[provider].apiKey;
-  const keySource = user.key ? "user" : env[provider].apiKey ? "environment" : null;
+  const keySource = user.key ? "user" : user.hint ? "user" : env[provider].apiKey ? "environment" : null;
   const consent = prefs.ai_external_consent;
   const status: AiStatus = !apiKey ? "not_configured" : !consent ? "needs_consent" : "ready";
   return { config: { status, provider, model, keySource, consent, allowPaidModels: env.allowPaidModels, keyHint: user.hint }, apiKey };
