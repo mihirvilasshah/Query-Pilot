@@ -6,7 +6,7 @@ import { apiError, authenticate, isResponse, parseBody, tooManyRequests, withinR
 import { getAppUrl } from "@/lib/env";
 
 const schema = z.object({
-  provider: z.enum(["gemini", "openrouter"]),
+  provider: z.enum(["gemini", "openrouter", "groq"]),
   /** Optional: validate a key that has not been saved yet. It is used once and never stored by this route. */
   apiKey: z.string().trim().min(8).max(400).optional(),
   model: z.string().trim().min(1).max(200).optional(),

@@ -200,7 +200,7 @@ export interface PreferencesRow {
   theme: "light" | "dark" | "system";
   sidebar_collapsed: boolean;
   default_dialect: SqlDialect;
-  ai_provider: "gemini" | "openrouter" | null;
+  ai_provider: "gemini" | "openrouter" | "groq" | null;
   ai_model: string | null;
   ai_external_consent: boolean;
   ai_external_consent_at: string | null;

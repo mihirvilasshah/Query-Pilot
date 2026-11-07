@@ -6,6 +6,7 @@ export * from "./prompts";
 export * from "./base-provider";
 export * from "./providers/gemini";
 export * from "./providers/openrouter";
+export * from "./providers/groq";
 export * from "./factory";
 export * from "./model-catalog";
 export * from "./references";

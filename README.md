@@ -22,7 +22,7 @@ services/schema-processor .NET 10 worker (DacFx + ScriptDom), Docker, PostgreSQL
 packages/shared-types     Types/constants shared by web and tests
 packages/shared-validation  Zod schemas, upload sniffing, file-name sanitising
 packages/database-core    Drizzle schema, SQL tokenizer & analyzer, schema diff, migration generator, graph, retrieval, docs
-packages/ai-core          Provider-independent AI layer (Gemini, OpenRouter), retries, reference verification
+packages/ai-core          Provider-independent AI layer (Gemini, OpenRouter, Groq), retries, reference verification
 supabase/migrations       PostgreSQL schema, RLS, storage policies, RPC functions
 docs/                     Architecture, security, deployment and setup guides
 ```

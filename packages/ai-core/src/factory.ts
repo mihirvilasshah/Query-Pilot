@@ -2,6 +2,7 @@ import type { AiProviderId } from "@querypilot/shared-types";
 import { AiError } from "./errors";
 import { defaultHttpOptions, type HttpOptions } from "./http";
 import { GeminiProvider } from "./providers/gemini";
+import { GroqProvider } from "./providers/groq";
 import { OpenRouterProvider } from "./providers/openrouter";
 import type { AiProvider } from "./types";
 
@@ -32,6 +33,8 @@ export function createAiProvider(config: CreateProviderConfig): AiProvider {
         ...(config.appName ? { appName: config.appName } : {}),
         ...(config.appUrl ? { appUrl: config.appUrl } : {}),
       });
+    case "groq":
+      return new GroqProvider({ apiKey: config.apiKey, model: config.model, http });
     default:
       throw new AiError("not_configured", `Unsupported AI provider: ${String(config.provider)}`);
   }

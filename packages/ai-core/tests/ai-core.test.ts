@@ -148,6 +148,47 @@ describe("OpenRouter provider", () => {
   });
 });
 
+describe("Groq provider", () => {
+  const groqOk = (text: string) => ({ choices: [{ message: { content: text } }], usage: { prompt_tokens: 7, completion_tokens: 2 } });
+
+  it("calls chat completions with bearer auth and parses usage", async () => {
+    const f = vi.fn(async () => mkRes(200, groqOk("hi")));
+    const p = createAiProvider({ provider: "groq", apiKey: "gsk-123", model: "openai/gpt-oss-120b", http: http(f as unknown as typeof fetch) });
+    const r = await p.generateText({ system: "s", messages: [{ role: "user", content: "x" }] });
+    expect(r).toMatchObject({ text: "hi", provider: "groq", usage: { inputTokens: 7, outputTokens: 2 } });
+    const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://api.groq.com/openai/v1/chat/completions");
+    expect((init.headers as Record<string, string>).authorization).toBe("Bearer gsk-123");
+    const body = JSON.parse(init.body as string);
+    expect(body.messages[0]).toEqual({ role: "system", content: "s" });
+    expect(body.max_completion_tokens).toBe(4096);
+  });
+
+  it("maps auth, model and rate-limit errors", async () => {
+    const f401 = vi.fn(async () => mkRes(401, { error: { message: "Invalid API Key" } }));
+    const p = createAiProvider({ provider: "groq", apiKey: "bad", model: "m", http: http(f401 as unknown as typeof fetch) });
+    await expect(p.generateText({ messages: [{ role: "user", content: "x" }] })).rejects.toMatchObject({ code: "invalid_api_key" });
+
+    const f404 = vi.fn(async () => mkRes(404, { error: { message: "model not found" } }));
+    const p2 = createAiProvider({ provider: "groq", apiKey: "k", model: "nope", http: http(f404 as unknown as typeof fetch) });
+    await expect(p2.generateText({ messages: [{ role: "user", content: "x" }] })).rejects.toMatchObject({ code: "model_unavailable" });
+
+    const f429 = vi.fn(async () => mkRes(429, { error: { message: "rate limit" } }));
+    const p3 = createAiProvider({ provider: "groq", apiKey: "k", model: "m", http: http(f429 as unknown as typeof fetch, { maxRetries: 1 }) });
+    await expect(p3.generateText({ messages: [{ role: "user", content: "x" }] })).rejects.toMatchObject({ code: "rate_limited" });
+    expect(f429).toHaveBeenCalledTimes(2);
+  });
+
+  it("validates keys and lists models", async () => {
+    const f = vi.fn(async () => mkRes(200, { data: [{ id: "openai/gpt-oss-120b", context_window: 131072 }, { id: "retired", active: false }] }));
+    const p = createAiProvider({ provider: "groq", apiKey: "k", model: "openai/gpt-oss-120b", http: http(f as unknown as typeof fetch) });
+    expect((await p.validateApiKey()).valid).toBe(true);
+    const models = await p.listModels();
+    expect(models).toHaveLength(1);
+    expect(models[0]).toMatchObject({ id: "openai/gpt-oss-120b", free: null, contextLength: 131072 });
+  });
+});
+
 describe("configuration", () => {
   it("throws not_configured without a key or model", () => {
     expect(() => createAiProvider({ provider: "gemini", apiKey: "", model: "m" })).toThrow(/No API key/);

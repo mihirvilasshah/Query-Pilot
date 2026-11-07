@@ -158,4 +158,4 @@ export type RiskLevel = "critical" | "high" | "medium" | "low" | "informational"
 
 export const RISK_ORDER: RiskLevel[] = ["critical", "high", "medium", "low", "informational"];
 
-export type AiProviderId = "gemini" | "openrouter";
+export type AiProviderId = "gemini" | "openrouter" | "groq";

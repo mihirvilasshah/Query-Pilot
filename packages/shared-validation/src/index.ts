@@ -96,13 +96,13 @@ export const compareSchema = z.object({
 });
 
 export const aiSettingsSchema = z.object({
-  provider: z.enum(["gemini", "openrouter"]),
+  provider: z.enum(["gemini", "openrouter", "groq"]),
   model: z.string().trim().min(1).max(200),
   externalConsent: z.boolean(),
 });
 
 export const apiKeySchema = z.object({
-  provider: z.enum(["gemini", "openrouter"]),
+  provider: z.enum(["gemini", "openrouter", "groq"]),
   apiKey: z.string().trim().min(8, "That does not look like an API key").max(400),
 });
 

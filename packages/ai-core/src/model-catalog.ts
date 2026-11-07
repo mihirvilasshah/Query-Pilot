@@ -18,9 +18,15 @@ export const SUGGESTED_MODELS: Record<AiProviderId, { id: string; note: string }
     { id: "qwen/qwen3-coder:free", note: "OpenRouter free variant, code oriented" },
     { id: "openrouter/free", note: "OpenRouter auto-router limited to free models" },
   ],
+  groq: [
+    { id: "openai/gpt-oss-120b", note: "Groq-hosted GPT-OSS 120B (free tier available)" },
+    { id: "openai/gpt-oss-20b", note: "Groq-hosted GPT-OSS 20B (faster, free tier available)" },
+    { id: "llama-3.3-70b-versatile", note: "Groq-hosted Llama 3.3 70B" },
+  ],
 };
 
 export const PROVIDER_LABELS: Record<AiProviderId, string> = {
   gemini: "Google Gemini",
   openrouter: "OpenRouter",
+  groq: "Groq",
 };

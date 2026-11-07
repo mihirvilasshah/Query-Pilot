@@ -8,6 +8,7 @@ AI is **optional**. With no provider configured every deterministic feature (imp
 |---|---|---|
 | Google Gemini | Google AI Studio free tier (rate limited) | https://aistudio.google.com/apikey |
 | OpenRouter | Models whose id ends in `:free` | https://openrouter.ai/keys |
+| Groq | Free tier (rate limited), e.g. `openai/gpt-oss-120b` | https://console.groq.com/keys |
 
 Free-tier availability, model names and limits change often. QueryPilot therefore **does not hardcode models**: defaults come from environment variables and the Settings page lists the live models from the provider (OpenRouter: free only). `SUGGESTED_MODELS` in `ai-core` is only a starting point.
 
@@ -16,11 +17,13 @@ Free-tier availability, model names and limits change often. QueryPilot therefor
 Set in `apps/web/.env.local` (or Vercel project settings):
 
 ```
-AI_DEFAULT_PROVIDER=gemini            # or openrouter
+AI_DEFAULT_PROVIDER=gemini            # or openrouter | groq
 GEMINI_API_KEY=...
 GEMINI_MODEL=gemini-2.5-flash
 OPENROUTER_API_KEY=...
 OPENROUTER_MODEL=openrouter/free
+GROQ_API_KEY=...
+GROQ_MODEL=openai/gpt-oss-120b
 AI_ALLOW_PAID_MODELS=false
 ```
 
@@ -38,7 +41,7 @@ Users then paste their own key in *Settings → AI*. The key is validated agains
 
 ## Behaviour guarantees
 
-* **No silent paid fallback.** OpenRouter models must end in `:free` (or be `openrouter/free`) unless `AI_ALLOW_PAID_MODELS=true`; HTTP 402 is reported as a paid-model block, never retried on another model. Gemini free-tier eligibility depends on your Google project.
+* **No silent paid fallback.** OpenRouter models must end in `:free` (or be `openrouter/free`) unless `AI_ALLOW_PAID_MODELS=true`; HTTP 402 is reported as a paid-model block, never retried on another model. Gemini free-tier eligibility depends on your Google project; Groq free-tier eligibility depends on your Groq account.
 * **Errors are normalised** (`AiError`): invalid key, rate limit, timeout, model unavailable, blocked content, bad response, network. Rate limits / 5xx / timeouts are retried with exponential backoff + jitter and `Retry-After`; invalid keys are never retried.
 * **Structured output** is validated with Zod; one automatic repair attempt, then a clear error.
 * **Usage**: only what providers report is shown (e.g. OpenRouter key usage/limit). Gemini free-tier quota is not queryable, so none is shown. `ai_requests` stores provider/model/status/latency only - never prompts or responses.

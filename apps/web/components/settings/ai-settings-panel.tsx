@@ -131,7 +131,7 @@ export function AiSettingsPanel({ initial, encryptionAvailable, requests }: { in
             <Label>Provider</Label>
             <Select value={provider} onValueChange={(v) => { setProvider(v as AiProviderId); setModel(""); setValidation(null); }}>
               <SelectTrigger aria-label="AI provider" data-testid="ai-provider"><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="gemini">Google Gemini</SelectItem><SelectItem value="openrouter">OpenRouter (free models)</SelectItem></SelectContent>
+              <SelectContent><SelectItem value="gemini">Google Gemini</SelectItem><SelectItem value="openrouter">OpenRouter (free models)</SelectItem><SelectItem value="groq">Groq</SelectItem></SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
@@ -144,9 +144,9 @@ export function AiSettingsPanel({ initial, encryptionAvailable, requests }: { in
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="custom-model">Or enter a model id <span className="font-normal text-muted-foreground">(optional)</span></Label>
-          <Input id="custom-model" value={customModel} onChange={(e) => setCustomModel(e.target.value)} placeholder={provider === "openrouter" ? "vendor/model:free" : "gemini-2.5-flash"} className="font-mono text-xs" />
+          <Input id="custom-model" value={customModel} onChange={(e) => setCustomModel(e.target.value)} placeholder={provider === "openrouter" ? "vendor/model:free" : provider === "groq" ? "openai/gpt-oss-120b" : "gemini-2.5-flash"} className="font-mono text-xs" />
           {modelsNote && <p className="text-xs text-muted-foreground">{modelsNote}</p>}
-          <p className="text-xs text-muted-foreground">{provider === "openrouter" && !cfg.allowPaidModels ? "Only free (:free) OpenRouter models are allowed; QueryPilot never silently switches to a paid model." : "Gemini free-tier limits depend on your Google AI Studio project; check your quota there."}</p>
+          <p className="text-xs text-muted-foreground">{provider === "openrouter" && !cfg.allowPaidModels ? "Only free (:free) OpenRouter models are allowed; QueryPilot never silently switches to a paid model." : provider === "groq" ? "Groq free-tier limits depend on your Groq account; check your usage in the Groq console." : "Gemini free-tier limits depend on your Google AI Studio project; check your quota there."}</p>
         </div>
         <div className="flex items-start gap-3 rounded-lg border p-3">
           <Switch id="consent" checked={consent} onCheckedChange={setConsent} data-testid="ai-consent" />
@@ -170,7 +170,7 @@ export function AiSettingsPanel({ initial, encryptionAvailable, requests }: { in
           </>
         ) : (
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Saving personal keys is disabled because <code className="rounded bg-muted px-1">CREDENTIAL_ENCRYPTION_KEY</code> is not set on the server. Configure <code className="rounded bg-muted px-1">GEMINI_API_KEY</code> or <code className="rounded bg-muted px-1">OPENROUTER_API_KEY</code> in the server environment instead (see docs/AI_PROVIDER_SETUP.md).</p>
+            <p className="text-sm text-muted-foreground">Saving personal keys is disabled because <code className="rounded bg-muted px-1">CREDENTIAL_ENCRYPTION_KEY</code> is not set on the server. Configure <code className="rounded bg-muted px-1">GEMINI_API_KEY</code>, <code className="rounded bg-muted px-1">OPENROUTER_API_KEY</code> or <code className="rounded bg-muted px-1">GROQ_API_KEY</code> in the server environment instead (see docs/AI_PROVIDER_SETUP.md).</p>
             <Button variant="outline" onClick={validate} disabled={busy === "validate" || cfg.keySource === null}>{busy === "validate" && <Loader2 className="size-4 animate-spin" />} Validate configured key</Button>
           </div>
         )}

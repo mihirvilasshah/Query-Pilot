@@ -58,7 +58,7 @@ export async function PUT(request: Request) {
 export async function DELETE(request: Request) {
   const ctx = await authenticate();
   if (isResponse(ctx)) return ctx;
-  const provider = z.enum(["gemini", "openrouter"]).safeParse(new URL(request.url).searchParams.get("provider"));
+  const provider = z.enum(["gemini", "openrouter", "groq"]).safeParse(new URL(request.url).searchParams.get("provider"));
   if (!provider.success) return apiError(422, "validation_failed", "Unknown provider.");
   const admin = createAdminClient();
   if (!admin) return apiError(501, "service_role_missing", "Server is not configured to manage stored keys.");
