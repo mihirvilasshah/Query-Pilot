@@ -16,7 +16,7 @@ export default async function VersionsPage() {
   const [versions, jobs] = await Promise.all([getVersions(project.id), getImportJobs(project.id, 100)]);
   return (
     <>
-      <PageHeader title="Schema versions" description={`Every import into “${project.name}” is kept as an immutable version.`} actions={<Button asChild size="sm"><Link href="/database-intelligence/import"><PlugZap className="size-4" /> Import new version</Link></Button>} />
+      <PageHeader title="Schema versions" description={`Every import into “${project.name}” is kept as a numbered version. You can rename the label; the imported schema does not change.`} actions={<Button asChild size="sm"><Link href="/database-intelligence/import"><PlugZap className="size-4" /> Import new version</Link></Button>} />
       <SectionCard contentClassName="p-0">
         {versions.length === 0 ? <div className="p-4"><EmptyState icon={Activity} title="No versions yet" description="Import a DACPAC or SQL file to create version 1." action={{ label: "Import schema", href: "/database-intelligence/import" }} /></div> : <VersionsTable versions={versions} jobs={jobs} projectId={project.id} />}
       </SectionCard>

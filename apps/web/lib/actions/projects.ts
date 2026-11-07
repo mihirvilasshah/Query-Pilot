@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { projectInputSchema, uuidSchema } from "@querypilot/shared-validation";
+import { projectInputSchema, uuidSchema, versionLabelSchema } from "@querypilot/shared-validation";
 import { fieldErrors, type FormState } from "@/lib/redirect";
 import { createClient } from "@/lib/supabase/server";
 import { PROJECT_COOKIE } from "@/lib/data/queries";
@@ -61,6 +61,17 @@ export async function updateProjectAction(projectId: string, _prev: FormState, f
   }
   revalidatePath("/", "layout");
   return { success: "Project saved." };
+}
+
+export async function updateVersionLabelAction(versionId: string, formData: FormData): Promise<FormState> {
+  if (!uuidSchema.safeParse(versionId).success) return { error: "Invalid version." };
+  const parsed = versionLabelSchema.safeParse(formData.get("label") ?? "");
+  if (!parsed.success) return { error: "Use at most 120 characters.", fieldErrors: { label: "Use at most 120 characters." } };
+  const supabase = await createClient();
+  const { error } = await supabase.from("database_versions").update({ label: parsed.data }).eq("id", versionId);
+  if (error) return { error: "Could not save the version label." };
+  revalidatePath("/", "layout");
+  return { success: parsed.data ? "Version label saved." : "Version label cleared." };
 }
 
 export async function deleteProjectAction(projectId: string): Promise<{ error?: string }> {

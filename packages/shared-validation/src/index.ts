@@ -30,6 +30,13 @@ export type ProjectInput = z.infer<typeof projectInputSchema>;
 
 export const uuidSchema = z.uuid();
 
+/** Display name for a schema version. Empty input clears the label. */
+export const versionLabelSchema = z
+  .string()
+  .trim()
+  .max(120)
+  .transform((v) => (v.length === 0 ? null : v));
+
 export const scriptInputSchema = z.object({
   name: trimmed(1, 200),
   description: z.string().trim().max(2000).optional().nullable(),

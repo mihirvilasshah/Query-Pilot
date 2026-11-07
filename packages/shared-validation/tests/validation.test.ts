@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { passwordSchema, projectInputSchema, sanitizeFileName, sniffFile, uploadRequestSchema, MAX_UPLOAD_BYTES } from "../src";
+import { passwordSchema, projectInputSchema, sanitizeFileName, sniffFile, uploadRequestSchema, versionLabelSchema, MAX_UPLOAD_BYTES } from "../src";
 
 const bytes = (...b: number[]) => Uint8Array.from(b);
 const text = (s: string) => new TextEncoder().encode(s);
@@ -36,5 +36,10 @@ describe("validation schemas", () => {
   it("normalises project input", () => {
     const r = projectInputSchema.parse({ name: "  Hospital  ", description: "", platform: "azure_sql_managed_instance" });
     expect(r).toEqual({ name: "Hospital", description: null, platform: "azure_sql_managed_instance" });
+  });
+  it("trims version labels and treats blank as cleared", () => {
+    expect(versionLabelSchema.parse("  Prod snapshot  ")).toBe("Prod snapshot");
+    expect(versionLabelSchema.parse("   ")).toBeNull();
+    expect(versionLabelSchema.safeParse("x".repeat(121)).success).toBe(false);
   });
 });

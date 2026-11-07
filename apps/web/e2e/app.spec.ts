@@ -301,6 +301,18 @@ test.describe("schema comparison & migration", () => {
   });
 });
 
+test.describe("schema versions", () => {
+  test("owner can rename a version label", async ({ page }) => {
+    await page.goto("/database-intelligence/versions");
+    await expect(page.getByTestId("versions-list")).toContainText("Updated pricing tables");
+    await page.getByTestId("edit-version-label-2").click();
+    await page.getByLabel("Version label").fill("Prod snapshot");
+    await page.getByTestId("save-version-label").click();
+    await expect(page.getByTestId("versions-list")).toContainText("Prod snapshot");
+    await expect(page.getByTestId("versions-list")).not.toContainText("Updated pricing tables");
+  });
+});
+
 test.describe("schema import pipeline", () => {
   test("rejects a fake DACPAC by content, not by extension", async ({ page }) => {
     await page.goto("/database-intelligence/import");

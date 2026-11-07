@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ImportJobStatusCard, type JobView } from "@/components/database/import-job-status";
+import { VersionLabelEditor } from "@/components/database/version-label-editor";
 import { formatDate } from "@/lib/format";
 import type { ImportJobRow, VersionRow } from "@/lib/data/types";
 
@@ -23,7 +24,7 @@ export function VersionsTable({ versions, jobs, projectId }: { versions: Version
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 <Badge variant="secondary" className="shrink-0">v{v.version_number}</Badge>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{v.label || (v.version_number === 1 ? "Initial import" : `Import ${v.version_number}`)}</p>
+                  <VersionLabelEditor versionId={v.id} versionNumber={v.version_number} label={v.label} />
                   <p className="truncate text-xs text-muted-foreground">{v.source_type.toUpperCase()} · {v.source_file_name} · {formatDate(v.created_at, true)}</p>
                 </div>
               </div>
