@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, KeyRound, Loader2, ShieldAlert, Trash2 } from "lucide-react";
+import { CheckCircle2, KeyRound, Loader2, RefreshCw, ShieldAlert, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PROVIDER_LABELS } from "@querypilot/ai-core";
@@ -32,6 +32,22 @@ export function AiSettingsPanel({ initial, encryptionAvailable, requests }: { in
   const [apiKey, setApiKey] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [validation, setValidation] = useState<{ valid: boolean; message: string; details: Record<string, unknown> | null } | null>(null);
+  const [requestRows, setRequestRows] = useState<AiRequestRow[]>(requests);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const refreshRequests = async () => {
+    setRefreshing(true);
+    try {
+      const res = await fetch("/api/ai/requests", { cache: "no-store" });
+      if (!res.ok) throw new Error("request history failed");
+      const j = (await res.json()) as { requests: AiRequestRow[] };
+      setRequestRows(j.requests);
+    } catch {
+      toast.error("Could not refresh request history");
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const fetchModels = useCallback(async (p: AiProviderId) => {
     const res = await fetch(`/api/ai/models?provider=${p}`);
@@ -183,10 +199,15 @@ export function AiSettingsPanel({ initial, encryptionAvailable, requests }: { in
       </div>
 
       <div className="surface p-5">
-        <h3 className="mb-3 text-sm font-semibold">Request history</h3>
-        {requests.length === 0 ? <p className="text-sm text-muted-foreground">No AI requests yet. Prompts and responses are never stored here, only metadata.</p> : (
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold">Request history</h3>
+          <Button size="sm" variant="ghost" onClick={refreshRequests} disabled={refreshing} data-testid="refresh-ai-requests">
+            {refreshing ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />} Refresh
+          </Button>
+        </div>
+        {requestRows.length === 0 ? <p className="text-sm text-muted-foreground">No AI requests yet. Prompts and responses are never stored here, only metadata.</p> : (
           <div className="overflow-x-auto"><table className="w-full min-w-[520px] text-sm"><thead className="text-left text-xs text-muted-foreground"><tr>{["When", "Operation", "Model", "Status", "Latency"].map((h) => <th key={h} className="py-1.5 pr-3 font-medium">{h}</th>)}</tr></thead>
-            <tbody className="divide-y">{requests.map((r) => <tr key={r.id}><td className="py-1.5 pr-3 text-muted-foreground">{timeAgo(r.created_at)}</td><td className="py-1.5 pr-3">{r.operation}</td><td className="py-1.5 pr-3 font-mono text-xs">{r.model}</td><td className="py-1.5 pr-3"><Badge variant={r.status === "success" ? "success" : r.status === "rate_limited" ? "warning" : "danger"}>{r.status}{r.error_code ? ` · ${r.error_code}` : ""}</Badge></td><td className="py-1.5 tabular-nums">{r.latency_ms != null ? `${r.latency_ms} ms` : "—"}</td></tr>)}</tbody></table></div>
+            <tbody className="divide-y">{requestRows.map((r) => <tr key={r.id}><td className="py-1.5 pr-3 text-muted-foreground">{timeAgo(r.created_at)}</td><td className="py-1.5 pr-3">{r.operation}</td><td className="py-1.5 pr-3 font-mono text-xs">{r.model}</td><td className="py-1.5 pr-3"><Badge variant={r.status === "success" ? "success" : r.status === "rate_limited" ? "warning" : "danger"}>{r.status}{r.error_code ? ` · ${r.error_code}` : ""}</Badge></td><td className="py-1.5 tabular-nums">{r.latency_ms != null ? `${r.latency_ms} ms` : "—"}</td></tr>)}</tbody></table></div>
         )}
       </div>
     </div>
